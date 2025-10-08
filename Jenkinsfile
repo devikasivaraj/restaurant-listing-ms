@@ -9,10 +9,12 @@ pipeline {
     VERSION = "${env.BUILD_ID}"
   }
 
-  tools {
-    // Ensure you have configured a Maven installation named "Maven" in Jenkins
+  // CRITICAL FIX: The 'tools' block is removed because it causes the pipeline to fail
+  // silently if the named tool ("Maven") is not correctly configured in Jenkins Global Tools.
+  // We will rely on Maven being in the system PATH of the Jenkins host.
+  /* tools {
     maven "Maven"
-  }
+  } */
 
   stages {
     
