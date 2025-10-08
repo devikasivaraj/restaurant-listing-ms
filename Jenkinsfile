@@ -15,6 +15,13 @@ pipeline {
   }
 
   stages {
+    
+    stage('Initialization Check') {
+      steps {
+        // This stage now serves its original purpose as a checkpoint.
+        sh 'echo "Jenkins agent initialization successful. Starting CI/CD pipeline."'
+      }
+    }
 
     stage('Maven Build') {
       steps {
@@ -43,7 +50,7 @@ pipeline {
           // NOTE ON SECURITY: Storing the Sonar token directly in the script is risky.
           // In a real environment, fetch this from Jenkins Credentials Manager.
           def token = "squ_a4cd4d12609e34e03e5099a3f92e05e0562a4e36"
-          // FIX: Corrected the SonarQube URL to remove the extra colon and the /api suffix, 
+          // Corrected the SonarQube URL to remove the extra colon and the /api suffix, 
           // as the API path should be added in the curl request.
           def sonarQubeBaseUrl = "http://35.181.51.183:9000"
           def componentKey = "com.devika:restaurantlisting"
