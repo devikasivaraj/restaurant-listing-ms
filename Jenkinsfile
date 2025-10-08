@@ -1,5 +1,15 @@
 pipeline {
-  agent any
+  // CRITICAL FIX: Switching from 'agent any' to a Docker agent.
+  // This bypasses the corrupted shell execution environment on the Jenkins master node
+  // by running the entire pipeline inside a clean, pre-configured Maven/Java container.
+  agent {
+    docker {
+      // Use a Maven image with Java 21 to match the Dockerfile and modern standards
+      image 'maven:3.9-eclipse-temurin-21' 
+      // Mount the Docker socket so the agent container can access the host's Docker daemon
+      args '-v /var/run/docker.sock:/var/run/docker.sock' 
+    }
+  }
 
   environment {
     // Variable to hold Docker Hub credentials retrieved from Jenkins Credentials Manager
@@ -9,9 +19,7 @@ pipeline {
     VERSION = "${env.BUILD_ID}"
   }
 
-  // CRITICAL FIX: The 'tools' block is removed because it causes the pipeline to fail
-  // silently if the named tool ("Maven") is not correctly configured in Jenkins Global Tools.
-  // We will rely on Maven being in the system PATH of the Jenkins host.
+  // The 'tools' block is unnecessary when using a Maven Docker image.
   /* tools {
     maven "Maven"
   } */
@@ -87,7 +95,11 @@ pipeline {
       }
     } 
 
+    // NOTE: Because Docker commands must be run outside the Maven container, we must use a second,
+    // dedicated Docker agent for the Docker stages. This agent will run on the master node 
+    // where Docker is installed.
     stage('Docker Build and Push') {
+      agent any // Revert to master/host node for Docker operations
       steps {
         // Use environment variables for secure login
         sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
@@ -101,6 +113,7 @@ pipeline {
     } 
 
     stage('Update Image Tag in GitOps') {
+      agent any // Continue on master/host node for Git operations
       steps {
         // Checkout the GitOps repository containing Kubernetes manifests
         checkout scmGit(
