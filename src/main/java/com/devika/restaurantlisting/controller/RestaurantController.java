@@ -1,4 +1,4 @@
-package com.codedecode.restaurantlisting.controller;
+package com.devika.restaurantlisting.controller;
 
 import java.util.List;
 
@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.codedecode.restaurantlisting.dto.RestaurantDto;
-import com.codedecode.restaurantlisting.service.RestaurantService;
+import com.devika.restaurantlisting.dto.RestaurantDto;
+import com.devika.restaurantlisting.service.RestaurantService;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200")

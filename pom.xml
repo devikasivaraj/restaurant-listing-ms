@@ -9,7 +9,7 @@
 		<version>3.3.13</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.codedecode</groupId>
+	<groupId>com.devika</groupId>
 	<artifactId>restaurantlisting</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>restaurantlisting</name>
@@ -28,9 +28,15 @@
 		<url />
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<!-- Targeting Java 22, matching your runtime environment -->
+		<java.version>22</java.version>
 		<spring-cloud.version>2023.0.6</spring-cloud.version>
-
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<jacoco.version>0.8.12</jacoco.version> 
+		<lombok.version>1.18.32</lombok.version> 
+		<!-- Keeping MapStruct at 1.4.2.Final for proven stability with Lombok. -->
+		<mapstruct.version>1.4.2.Final</mapstruct.version> 
 	</properties>
 	<dependencies>
 		<dependency>
@@ -56,21 +62,13 @@
 			<artifactId>mysql-connector-j</artifactId>
 			<version>8.0.33</version>
 		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.mapstruct</groupId>
-			<artifactId>mapstruct</artifactId>
-			<version>1.6.1</version>
-		</dependency>
+		
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -86,21 +84,28 @@
 
 	<build>
 		<plugins>
+			<!-- Configure Surefire Plugin for Mockito/Java 22 compatibility -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version> 
+				<configuration>
+					<argLine>
+						<!-- This flag is necessary for Mockito/ByteBuddy in modern JDKs -->
+						-Dnet.bytebuddy.experimental=true
+						${argLine} 
+					</argLine>
+				</configuration>
+			</plugin>
+			
+			<!-- FIX 1: Upgraded to 3.14.0 for maximum Java 22 compiler compatibility. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.14.0</version>
 				<configuration>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</path>
-						<path>
-							<groupId>org.mapstruct</groupId>
-							<artifactId>mapstruct-processor</artifactId>
-							<version>1.6.1</version>
-						</path>
-					</annotationProcessorPaths>
+					<release>${java.version}</release>
+					
 				</configuration>
 			</plugin>
 			<plugin>
@@ -115,52 +120,30 @@
 					</excludes>
 				</configuration>
 			</plugin>
-		<plugin>
-   <groupId>org.apache.maven.plugins</groupId>
-   <artifactId>maven-compiler-plugin</artifactId>
-   <configuration>
-      <source>1.8</source>
-      <target>1.8</target>
-      <annotationProcessorPaths>
-         <path>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.26</version>
-         </path>
-         <path>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>1.4.2.Final</version>
-         </path>
- </annotationProcessorPaths>
-   </configuration>
-</plugin>
-<plugin>
-   <groupId>org.sonarsource.scanner.maven</groupId>
-   <artifactId>sonar-maven-plugin</artifactId>
-   <version>3.8.0.2131</version>
-</plugin>
-<plugin>
-   <groupId>org.jacoco</groupId>
-   <artifactId>jacoco-maven-plugin</artifactId>
-   <version>0.8.8</version>
-   <executions>
-      <execution>
-         <id>prepare-agent</id>
-         <goals>
-            <goal>prepare-agent</goal>
-         </goals>
-      </execution>
-      <execution>
-         <id>report</id>
-         <goals>
-            <goal>report</goal>
-         </goals>
-      </execution>
-   </executions>
-</plugin>
-
-		
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>3.8.0.2131</version>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

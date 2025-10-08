@@ -1,4 +1,4 @@
-package com.codedecode.restaurantlisting.entity;
+package com.devika.restaurantlisting.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

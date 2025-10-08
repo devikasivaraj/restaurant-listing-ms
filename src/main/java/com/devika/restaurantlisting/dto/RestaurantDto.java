@@ -1,4 +1,4 @@
-package com.codedecode.restaurantlisting.dto;
+package com.devika.restaurantlisting.dto;
 
 public class RestaurantDto {
 
