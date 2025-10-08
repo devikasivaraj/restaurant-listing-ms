@@ -1,12 +1,7 @@
 pipeline {
-  // FIX 1: Using a specific Docker agent with Java 22 to match your project's pom.xml.
-  agent {
-    docker {
-      image 'maven:3.9-eclipse-temurin-22' 
-      // Mount the Docker socket so the agent container can access the host's Docker daemon
-      args '-v /var/run/docker.sock:/var/run/docker.sock' 
-    }
-  }
+  // FIX 1: Reverting to 'agent any' to bypass the "Invalid agent type docker" error.
+  // The Docker agent usage must now be implemented within a 'script' block for the build stages.
+  agent any
 
   environment {
     // Variable to hold Docker Hub credentials retrieved from Jenkins Credentials Manager
@@ -16,37 +11,48 @@ pipeline {
     VERSION = "${env.BUILD_ID}"
   }
   
-  // Maven is provided by the Docker image, so the tools block is removed.
-
   stages {
     
     stage('Initialization Check') {
       steps {
-        sh 'echo "Jenkins agent initialization successful. Starting CI/CD pipeline."'
+        sh 'echo "Jenkins host agent initialization successful. Starting CI/CD pipeline."'
       }
     }
 
-    stage('Maven Build') {
+    // FIX 2: Grouping Maven stages to run inside the Java 22 Docker container
+    stage('Code Build & Analysis (Java 22)') {
       steps {
-        // Compile and package the application, skipping tests initially
-        sh 'mvn clean package -DskipTests'
+        script {
+          // Use a Docker block inside the script to run all subsequent steps in the correct Java 22 environment.
+          // This isolates the build environment and resolves the previous Java version error.
+          docker.image('maven:3.9-eclipse-temurin-22').inside('-v /var/run/docker.sock:/var/run/docker.run') {
+            
+            // --- Maven Build ---
+            stage('Maven Build') {
+              sh 'echo "--- Running Maven Build inside Java 22 Docker container ---"'
+              // Compile and package the application, skipping tests initially
+              sh 'mvn clean package -DskipTests'
+            }
+
+            // --- Run Tests ---
+            stage('Run Tests') {
+              sh 'echo "--- Running Tests inside Java 22 Docker container ---"'
+              // Run unit tests and generate JaCoCo coverage reports
+              sh 'mvn test'
+            }
+
+            // --- SonarQube Analysis ---
+            stage('SonarQube Analysis') {
+              sh 'echo "--- Running SonarQube Analysis inside Java 22 Docker container ---"'
+              // FIX 3: Updated SonarQube IP and ensured correct URL format
+              sh 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar -Dsonar.host.url=http://13.37.220.128:9000 -Dsonar.login=squ_a4cd4d12609e34e03e5099a3f92e05e0562a4e36'
+            }
+          }
+        }
       }
     }
 
-    stage('Run Tests') {
-      steps {
-        // Run unit tests and generate JaCoCo coverage reports
-        sh 'mvn test'
-      }
-    }
-
-    stage('SonarQube Analysis') {
-      steps {
-        // FIX 2: Updated SonarQube IP and ensured correct URL format
-        sh 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar -Dsonar.host.url=http://13.37.220.128:9000 -Dsonar.login=squ_a4cd4d12609e34e03e5099a3f92e05e0562a4e36'
-      }
-    }
-
+    // This stage remains outside the Docker container, executing on 'agent any'.
     stage('Check code coverage') {
       steps {
         script {
@@ -84,7 +90,7 @@ pipeline {
       }
     } 
 
-    // FIX 3: Revert agent to 'any' (master/host) for Docker operations
+    // This stage runs on 'agent any' to access the host's Docker daemon.
     stage('Docker Build and Push') {
       agent any 
       steps {
@@ -94,6 +100,7 @@ pipeline {
       }
     } 
 
+    // This stage runs on 'agent any' to perform Git operations.
     stage('Update Image Tag in GitOps') {
       agent any // Continue on master/host node for Git operations
       steps {
